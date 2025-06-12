@@ -1,6 +1,7 @@
 import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import pino from 'pino';
+import qrcode from 'qrcode-terminal'; // 👈 Aqui é o novo import
 
 const startSock = async () => {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
@@ -16,18 +17,17 @@ const startSock = async () => {
 
   sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
     if (qr) {
-      console.log('\n📲 ESCANEIE O QR CODE ABAIXO:\n');
-      console.log(qr);
+      qrcode.generate(qr, { small: true }); // 👈 Aqui gera o QR gráfico no terminal
     }
 
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
       if (reason === DisconnectReason.loggedOut) {
         console.log("❌ Deslogado. Escaneie o QR novamente!");
-        startSock(); // Reinicia o socket
+        startSock();
       }
     } else if (connection === 'open') {
-      console.log("✅ Conectado com sucesso! Bot ReiDoGrupo no ar 👑");
+      console.log("✅ Bot conectado com sucesso! 👑");
     }
   });
 };
