@@ -9,18 +9,22 @@ const startSock = async () => {
   const sock = makeWASocket({
     version,
     auth: state,
-    printQRInTerminal: true,
     logger: pino({ level: 'silent' })
   });
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
+  sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+    if (qr) {
+      console.log('\n📲 ESCANEIE O QR CODE ABAIXO:\n');
+      console.log(qr);
+    }
+
     if (connection === 'close') {
       const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
       if (reason === DisconnectReason.loggedOut) {
         console.log("❌ Deslogado. Escaneie o QR novamente!");
-        startSock();
+        startSock(); // Reinicia o socket
       }
     } else if (connection === 'open') {
       console.log("✅ Conectado com sucesso! Bot ReiDoGrupo no ar 👑");
