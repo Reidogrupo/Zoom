@@ -1,0 +1,13 @@
+{
+  "name": "reidogrupo-bot",
+  "version": "1.0.0",
+  "description": "Bot do WhatsApp ReiDoGrupo 👑",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.6.0",
+    "pino": "^8.0.0"
+  }
+}
