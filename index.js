@@ -1,42 +1,28 @@
-import { default as makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys'
-import P from 'pino'
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import pino from 'pino';
 
-const startBot = async () => {
-  const { state, saveCreds } = await useMultiFileAuthState('auth')
-  const { version } = await fetchLatestBaileysVersion()
-
+const startSock = async () => {
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  const { version } = await fetchLatestBaileysVersion();
   const sock = makeWASocket({
-    logger: P({ level: 'silent' }),
-    printQRInTerminal: true,
+    version,
     auth: state,
-    version
-  })
+    printQRInTerminal: true,
+    logger: pino({ level: 'silent' })
+  });
 
-  sock.ev.on('creds.update', saveCreds)
-
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect } = update
+  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
     if (connection === 'close') {
-      const shouldReconnect = (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut)
-      if (shouldReconnect) {
-        startBot()
+      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode;
+      if (reason === DisconnectReason.loggedOut) {
+        console.log("Desconectado. Escaneie novamente.");
+        startSock(); // Recomeça
       }
     } else if (connection === 'open') {
-      console.log('🤖 Bot conectado com sucesso!')
+      console.log("🤖 Bot conectado com sucesso!");
     }
-  })
+  });
+};
 
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    const msg = messages[0]
-    if (!msg.message) return
-    const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text
-
-    if (text === '.menu') {
-      await sock.sendMessage(msg.key.remoteJid, {
-        text: '👑 Comandos do ReiDoGrupo:\\n.cantada\\n.safado on/off\\n.xp\\n.avisos\\n\\nMais em breve...'
-      })
-    }
-  })
-}
-
-startBot()
+startSock();
